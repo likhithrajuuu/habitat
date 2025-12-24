@@ -56,13 +56,15 @@ public class Movie {
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL)
     private List<Rating> ratings;
     
+	private String moviePoster;
+
     public Movie() {
     	
     }
 
 	public Movie(Long movieId, String movieName, String movieDescription, Integer durationMinutes, String certificate,
 			LocalDate releaseDate, Double avgRating, Set<Genre> genres, Set<Format> formats, Set<Language> languages,
-			List<Rating> ratings) {
+			List<Rating> ratings, String moviePoster) {
 		super();
 		this.movieId = movieId;
 		this.movieName = movieName;
@@ -75,6 +77,7 @@ public class Movie {
 		this.formats = formats;
 		this.languages = languages;
 		this.ratings = ratings;
+		this.moviePoster = moviePoster;
 	}
 
 	public Long getMovieId() {
@@ -163,6 +166,14 @@ public class Movie {
 
 	public void setRatings(List<Rating> ratings) {
 		this.ratings = ratings;
+	}
+
+	public String getMoviePoster(String moviePoster){
+		return moviePoster;
+	}
+
+	public void setMoviePoster(String moviePoster){
+		this.moviePoster = moviePoster;
 	}
 
 	@Override

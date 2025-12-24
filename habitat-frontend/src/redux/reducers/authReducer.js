@@ -68,6 +68,31 @@ const deriveUserFromToken = (token) => {
   };
 };
 
+const mergeUser = (derived, provided) => {
+  if (!derived && !provided) return null;
+  if (!derived) return provided;
+  if (!provided) return derived;
+
+  const cleanedProvided = {};
+  for (const [key, value] of Object.entries(provided)) {
+    if (value !== null && value !== undefined && value !== "") {
+      cleanedProvided[key] = value;
+    }
+  }
+
+  const merged = {
+    ...derived,
+    ...cleanedProvided,
+  };
+
+  // Prefer JWT payload as canonical raw claims unless explicitly overridden.
+  if (derived.raw && cleanedProvided.raw === undefined) {
+    merged.raw = derived.raw;
+  }
+
+  return merged;
+};
+
 const initialState = {
   token: localStorage.getItem("token"),
   loading: false,
@@ -95,7 +120,8 @@ export const authReducer = (state = initialState, action) => {
               action.payload?.access_token ||
               null;
 
-        const user = action.payload?.user || deriveUserFromToken(token);
+        const derivedUser = deriveUserFromToken(token);
+        const user = mergeUser(derivedUser, action.payload?.user || null);
 
         return {
           ...state,
@@ -131,7 +157,8 @@ export const authReducer = (state = initialState, action) => {
               action.payload?.access_token ||
               null;
 
-        const user = action.payload?.user || deriveUserFromToken(token);
+        const derivedUser = deriveUserFromToken(token);
+        const user = mergeUser(derivedUser, action.payload?.user || null);
 
         return {
           ...state,

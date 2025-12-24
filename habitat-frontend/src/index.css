@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+	html {
+		@apply bg-slate-50;
+	}
+
+	html.dark {
+		@apply bg-slate-950;
+	}
+
+	body {
+		@apply min-h-screen bg-transparent text-slate-900;
+	}
+
+	html.dark body {
+		@apply text-slate-100;
+	}
+}

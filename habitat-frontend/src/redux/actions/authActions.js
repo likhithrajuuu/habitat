@@ -45,8 +45,16 @@ const normalizeAuthError = (error, fallback) => {
   }
 
   // Friendly mappings for common auth failures
-  if (status === 401 || status === 403) {
+  if (status === 401) {
     return "Invalid email or password.";
+  }
+
+  // 403 during /api/auth/login is often CSRF / Spring Security config (not bad credentials)
+  if (status === 403) {
+    if (lowered.includes("csrf")) {
+      return "Request blocked by server security (CSRF).";
+    }
+    return "Request blocked by server (403).";
   }
 
   if (lowered.includes("invalid credentials")) {
@@ -77,7 +85,7 @@ export const login = (userData) => async (dispatch) => {
   try {
     dispatch({ type: LOGIN_REQUEST });
 
-    const { data } = await api.post("/auth/login", userData);
+    const { data } = await api.post("/api/auth/login", userData);
 
     // Accept either raw token string or an object like { token }
     const token = typeof data === "string" ? data : data?.token;
@@ -104,7 +112,7 @@ export const register = (userData) => async (dispatch) => {
   try {
     dispatch({ type: REGISTER_REQUEST });
 
-    const { data } = await api.post("/auth/register", userData);
+    const { data } = await api.post("/api/auth/register", userData);
 
     // If register returns token, store it and mark authenticated.
     const token = typeof data === "string" ? data : data?.token;
