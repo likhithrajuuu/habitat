@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Table(schema = "dev", name = "movies")
 public class Movie {
@@ -33,6 +35,7 @@ public class Movie {
             joinColumns = @JoinColumn(name = "movie_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
+	@JsonManagedReference
     private Set<Genre> genres;
 
     @ManyToMany
@@ -181,7 +184,7 @@ public class Movie {
 		return "Movie [movieId=" + movieId + ", movieName=" + movieName + ", movieDescription=" + movieDescription
 				+ ", durationMinutes=" + durationMinutes + ", certificate=" + certificate + ", releaseDate="
 				+ releaseDate + ", avgRating=" + avgRating + ", genres=" + genres + ", formats=" + formats
-				+ ", languages=" + languages + ", ratings=" + ratings + "]";
+				+ ", languages=" + languages + ", ratings=" + ratings + ", moviePoster=" + "]";
 	}
     
     

@@ -93,11 +93,23 @@ const mergeUser = (derived, provided) => {
   return merged;
 };
 
+const readPersistedUser = () => {
+  try {
+    const raw = localStorage.getItem("authUser");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
 const initialState = {
   token: localStorage.getItem("token"),
   loading: false,
   isAuthenticated: !!localStorage.getItem("token"),
-  user: deriveUserFromToken(localStorage.getItem("token")),
+  user: mergeUser(deriveUserFromToken(localStorage.getItem("token")), readPersistedUser()),
   error: null,
 };
 

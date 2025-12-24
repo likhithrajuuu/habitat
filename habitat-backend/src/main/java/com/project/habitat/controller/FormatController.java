@@ -12,22 +12,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.habitat.exception.CrudOperationException;
 import com.project.habitat.exception.CrudValidationException;
-import com.project.habitat.service.GenreService;
+import com.project.habitat.service.FormatService;
 
-import com.project.habitat.model.Genre;
+import com.project.habitat.model.Format;
 
 @RestController
-@RequestMapping("/genres")
-public class GenreController {
+@RequestMapping("/format")
+public class FormatController {
     @Autowired
-    private GenreService genreService;
+    private FormatService formatService;
 
     private Logger log = LogManager.getLogger(MovieController.class);
 
     @GetMapping("/getall")
-    public ResponseEntity<?> getAllGenres() {
+    public ResponseEntity<?> getAllFormats() {
         try {
-            List<Genre> movies = genreService.getAllGenres();
+            List<Format> movies = formatService.getAllFormats();
             log.info("Successfully fetched " + movies.size() + " movies");
             return ResponseEntity.status(HttpStatus.OK).body(movies);
         } catch (CrudOperationException e) {

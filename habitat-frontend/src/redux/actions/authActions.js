@@ -91,6 +91,19 @@ export const login = (userData) => async (dispatch) => {
     const token = typeof data === "string" ? data : data?.token;
     if (token) localStorage.setItem("token", token);
 
+    // Persist minimal user info so UI can still show it after refresh
+    // (some JWTs do not include email/username claims).
+    try {
+      localStorage.setItem(
+        "authUser",
+        JSON.stringify({
+          email: userData?.email || null,
+        })
+      );
+    } catch {
+      // ignore storage errors
+    }
+
     dispatch({
       type: LOGIN_SUCCESS,
       payload: {
@@ -118,6 +131,18 @@ export const register = (userData) => async (dispatch) => {
     const token = typeof data === "string" ? data : data?.token;
     if (token) localStorage.setItem("token", token);
 
+    try {
+      localStorage.setItem(
+        "authUser",
+        JSON.stringify({
+          email: userData?.email || null,
+          username: userData?.username || null,
+        })
+      );
+    } catch {
+      // ignore storage errors
+    }
+
     dispatch({
       type: REGISTER_SUCCESS,
       payload: {
@@ -142,5 +167,6 @@ export const clearAuthError = () => (dispatch) => {
 
 export const logout = () => (dispatch) => {
   localStorage.removeItem("token");
+  localStorage.removeItem("authUser");
   dispatch({ type: LOGOUT });
 };

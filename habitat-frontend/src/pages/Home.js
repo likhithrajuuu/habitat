@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import api from "../api/axios";
 import {
   clearMovieError,
   getAllMovies,
@@ -79,6 +80,17 @@ const resolvePosterUrl = (rawValue, apiBaseUrl) => {
     const value = rawValue.trim();
     if (!value) return null;
     if (value.startsWith("data:image/")) return value;
+
+    // If DB stores raw base64 (no data: prefix), convert it.
+    // Heuristic: long-ish string consisting only of base64 chars (plus optional padding).
+    const looksLikeBase64 =
+      value.length >= 64 &&
+      /^[A-Za-z0-9+/]+={0,2}$/.test(value) &&
+      value.length % 4 === 0;
+    if (looksLikeBase64) {
+      return `data:image/jpeg;base64,${value}`;
+    }
+
     if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("blob:")) return value;
 
     // If it looks like a path, keep it relative so CRA proxy can serve it,
@@ -147,11 +159,20 @@ export default function Home() {
   const moviesByFormat = useSelector((state) => state.moviesByFormat || {});
 
   const [browseMode, setBrowseMode] = useState("all"); // all | genre | language | format
-    const apiBaseUrl = (process.env.REACT_APP_API_BASE_URL || "").replace(/\/$/, "");
+  const apiBaseUrl = (process.env.REACT_APP_API_BASE_URL || "").replace(/\/$/, "");
 
   const [selectedGenre, setSelectedGenre] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("");
+
+  const [genreOptions, setGenreOptions] = useState([]);
+  const [genreOptionsLoading, setGenreOptionsLoading] = useState(false);
+
+  const [languageOptions, setLanguageOptions] = useState([]);
+  const [languageOptionsLoading, setLanguageOptionsLoading] = useState(false);
+
+  const [formatOptions, setFormatOptions] = useState([]);
+  const [formatOptionsLoading, setFormatOptionsLoading] = useState(false);
 
   const scrollerRef = useRef(null);
   const carouselWrapRef = useRef(null);
@@ -160,6 +181,180 @@ export default function Home() {
   useEffect(() => {
     dispatch(getAllMovies());
   }, [dispatch]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const normalizeGenreOption = (g) => {
+      if (!g) return null;
+      if (typeof g === "string") {
+        const value = g.trim();
+        if (!value) return null;
+        return { value, label: value };
+      }
+      if (typeof g !== "object") return null;
+
+      const name =
+        g.genreName ||
+        g.name ||
+        g.genre ||
+        g.genre_name ||
+        g.genreTitle ||
+        g.genre_title ||
+        null;
+
+      const id = g.genreId ?? g.id ?? g.genre_id ?? null;
+      const value = (name ?? (id != null ? String(id) : "")).trim();
+      if (!value) return null;
+
+      const label = name ? String(name).trim() : `Genre ${value}`;
+      return { value, label };
+    };
+
+    const loadGenres = async () => {
+      try {
+        setGenreOptionsLoading(true);
+        const { data } = await api.get("/genres/getall");
+
+        const raw = Array.isArray(data) ? data : [];
+        const options = raw.map(normalizeGenreOption).filter(Boolean);
+
+        // de-dupe by value + sort by label
+        const deduped = new Map();
+        for (const opt of options) {
+          if (!deduped.has(opt.value)) deduped.set(opt.value, opt);
+        }
+        const unique = Array.from(deduped.values());
+        unique.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+
+        if (isMounted) setGenreOptions(unique);
+      } catch {
+        // Keep the dropdown functional via fallback (derived genres from movies)
+        if (isMounted) setGenreOptions([]);
+      } finally {
+        if (isMounted) setGenreOptionsLoading(false);
+      }
+    };
+
+    loadGenres();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const normalizeFormatOption = (f) => {
+      if (!f) return null;
+      if (typeof f === "string") {
+        const value = f.trim();
+        if (!value) return null;
+        return { value, label: value };
+      }
+      if (typeof f !== "object") return null;
+
+      const name =
+        f.formatName ||
+        f.name ||
+        f.format ||
+        f.format_name ||
+        f.formatTitle ||
+        f.format_title ||
+        null;
+      const id = f.formatId ?? f.id ?? f.format_id ?? null;
+
+      const value = (name ?? (id != null ? String(id) : "")).trim();
+      if (!value) return null;
+      const label = name ? String(name).trim() : `Format ${value}`;
+      return { value, label };
+    };
+
+    const loadFormats = async () => {
+      try {
+        setFormatOptionsLoading(true);
+        const { data } = await api.get("/format/getall");
+
+        const raw = Array.isArray(data) ? data : [];
+        const options = raw.map(normalizeFormatOption).filter(Boolean);
+
+        const deduped = new Map();
+        for (const opt of options) {
+          if (!deduped.has(opt.value)) deduped.set(opt.value, opt);
+        }
+        const unique = Array.from(deduped.values());
+        unique.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+
+        if (isMounted) setFormatOptions(unique);
+      } catch {
+        if (isMounted) setFormatOptions([]);
+      } finally {
+        if (isMounted) setFormatOptionsLoading(false);
+      }
+    };
+
+    loadFormats();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const normalizeLanguageOption = (l) => {
+      if (!l) return null;
+      if (typeof l === "string") {
+        const value = l.trim();
+        if (!value) return null;
+        return { value, label: value };
+      }
+      if (typeof l !== "object") return null;
+
+      const name =
+        l.languageName ||
+        l.name ||
+        l.language ||
+        l.language_name ||
+        l.languageTitle ||
+        l.language_title ||
+        null;
+      const id = l.languageId ?? l.id ?? l.language_id ?? null;
+
+      const value = (name ?? (id != null ? String(id) : "")).trim();
+      if (!value) return null;
+      const label = name ? String(name).trim() : `Language ${value}`;
+      return { value, label };
+    };
+
+    const loadLanguages = async () => {
+      try {
+        setLanguageOptionsLoading(true);
+        const { data } = await api.get("/language/getall");
+
+        const raw = Array.isArray(data) ? data : [];
+        const options = raw.map(normalizeLanguageOption).filter(Boolean);
+
+        const deduped = new Map();
+        for (const opt of options) {
+          if (!deduped.has(opt.value)) deduped.set(opt.value, opt);
+        }
+        const unique = Array.from(deduped.values());
+        unique.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+
+        if (isMounted) setLanguageOptions(unique);
+      } catch {
+        if (isMounted) setLanguageOptions([]);
+      } finally {
+        if (isMounted) setLanguageOptionsLoading(false);
+      }
+    };
+
+    loadLanguages();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const normalizedMovies = useMemo(() => {
     if (!Array.isArray(movieList.movies)) return [];
@@ -190,6 +385,24 @@ export default function Home() {
       formats: Array.from(formats).sort(sortAlpha),
     };
   }, [normalizedMovies]);
+
+  const genresForDropdown = useMemo(() => {
+    if (genreOptionsLoading) return [];
+    if (genreOptions.length) return genreOptions;
+    return availableOptions.genres.map((g) => ({ value: String(g), label: String(g) }));
+  }, [availableOptions.genres, genreOptions, genreOptionsLoading]);
+
+  const languagesForDropdown = useMemo(() => {
+    if (languageOptionsLoading) return [];
+    if (languageOptions.length) return languageOptions;
+    return availableOptions.languages.map((l) => ({ value: String(l), label: String(l) }));
+  }, [availableOptions.languages, languageOptions, languageOptionsLoading]);
+
+  const formatsForDropdown = useMemo(() => {
+    if (formatOptionsLoading) return [];
+    if (formatOptions.length) return formatOptions;
+    return availableOptions.formats.map((f) => ({ value: String(f), label: String(f) }));
+  }, [availableOptions.formats, formatOptions, formatOptionsLoading]);
 
   const activeSlice = useMemo(() => {
     if (browseMode === "genre") return moviesByGenre;
@@ -317,9 +530,10 @@ export default function Home() {
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
           >
             <option value="">All genres</option>
-            {availableOptions.genres.map((g) => (
-              <option key={g} value={g}>
-                {g}
+            {genreOptionsLoading ? <option disabled>Loading…</option> : null}
+            {genresForDropdown.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
               </option>
             ))}
           </select>
@@ -345,9 +559,10 @@ export default function Home() {
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
           >
             <option value="">All languages</option>
-            {availableOptions.languages.map((l) => (
-              <option key={l} value={l}>
-                {l}
+            {languageOptionsLoading ? <option disabled>Loading…</option> : null}
+            {languagesForDropdown.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.label}
               </option>
             ))}
           </select>
@@ -373,9 +588,10 @@ export default function Home() {
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
           >
             <option value="">All formats</option>
-            {availableOptions.formats.map((f) => (
-              <option key={f} value={f}>
-                {f}
+            {formatOptionsLoading ? <option disabled>Loading…</option> : null}
+            {formatsForDropdown.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
               </option>
             ))}
           </select>

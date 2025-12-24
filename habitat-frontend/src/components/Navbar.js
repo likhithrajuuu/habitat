@@ -1022,7 +1022,7 @@ const Navbar = () => {
             </div>
 
             <div className="flex shrink-0 items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <button type="button" className="hover:text-slate-900 dark:hover:text-white">ListYourShow</button>
+              <button type="button" className="hover:text-slate-900 dark:hover:text-white">Create Your Habitat</button>
               <button type="button" className="hover:text-slate-900 dark:hover:text-white">Corporates</button>
               <button type="button" className="hover:text-slate-900 dark:hover:text-white">Offers</button>
               <button type="button" className="hover:text-slate-900 dark:hover:text-white">Gift Cards</button>

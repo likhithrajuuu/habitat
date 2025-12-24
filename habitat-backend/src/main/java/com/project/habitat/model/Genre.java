@@ -3,6 +3,8 @@ package com.project.habitat.model;
 import jakarta.persistence.*;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 @Entity
 @Table(schema = "dev", name = "genres")
 public class Genre {
@@ -15,6 +17,7 @@ public class Genre {
     private String name;
 
     @ManyToMany(mappedBy = "genres")
+	@JsonBackReference
     private Set<Movie> movies;
 
     public Genre() {}
