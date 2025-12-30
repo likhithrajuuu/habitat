@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Share2, ThumbsUp } from "lucide-react";
-import { getMovieById } from "../redux/actions/movieActions";
+import {getMovieById, getMoviesByLanguage, clearMovieError, getMoviesByGenre, getMoviesByFormat} from "../redux/actions/movieActions";
 
 const pickTitle = (movie) => {
   if (!movie || typeof movie !== "object") return "Movie";
@@ -23,6 +23,27 @@ const pickPosterSrc = (movie) => {
   );
 };
 
+const pickLanguagesLabel = (movie) => {
+  if (!movie || typeof movie !== "object") return null;
+  const raw =
+    movie.languages ||
+    movie.languageList ||
+    movie.availableLanguages ||
+    movie.language ||
+    movie.languageName ||
+    movie.movieLanguage ||
+    null;
+
+  if (!raw) return null;
+  if (Array.isArray(raw)) {
+    return raw
+      .map((l) => (typeof l === "object" ? l.name || l.languageName : l))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof raw === "string") return raw;
+  return null;
+};
 const resolvePosterUrl = (rawValue, apiBaseUrl) => {
   if (!rawValue) return null;
   if (typeof rawValue !== "string") return null;
@@ -93,6 +114,7 @@ const extractNames = (value, fallbackKey) => {
 export default function MovieDetails() {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { loading, movie, error } = useSelector((state) => state.movieDetails || {});
 
   useEffect(() => {
@@ -112,9 +134,25 @@ export default function MovieDetails() {
   const formats = extractNames(movie?.formats, "format");
   const languages = extractNames(movie?.languages, "language");
 
-  const heroMeta = [durationLabel, genres.length ? genres.join(", ") : null, certificate]
-    .filter(Boolean)
-    .join("  •  ");
+  const handleGenreClick = (genre) => {
+    dispatch(clearMovieError());
+    dispatch(getMoviesByGenre(genre));
+    navigate("/", { state: { filterGenre: genre } });
+  };
+
+  const handleLanguageClick = (lang) => {
+    dispatch(clearMovieError());
+    dispatch(getMoviesByLanguage(lang));
+    navigate("/", { state: { filterLanguage: lang } });
+  };
+
+  const handleFormatClick = (format) => {
+    dispatch(clearMovieError());
+    dispatch(getMoviesByFormat(format));
+    navigate("/", { state: { filterFormat: format } });
+  };
+
+  const heroMetaParts = [durationLabel].filter(Boolean);
 
   if (error) {
     return (
@@ -185,7 +223,7 @@ export default function MovieDetails() {
               </div>
 
               <div className="mt-4 flex flex-col gap-3">
-                <div className="rounded-2xl border border-white/20 bg-black/20 px-4 py-3">
+                <div className="rounded-2xl border-white border-white/60 bg-black/80 px-4 py-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="inline-flex items-center gap-2 text-sm font-semibold">
                       <ThumbsUp size={18} className="text-emerald-400" />
@@ -202,19 +240,71 @@ export default function MovieDetails() {
                   </div>
                 </div>
 
-                {heroMeta ? <div className="text-sm text-white/85">{heroMeta}</div> : null}
+                <div className="flex flex-wrap items-center gap-x-2 text-sm text-white/85">
+                  {heroMetaParts.map((part, i) => (
+                    <span key={i} className="flex items-center gap-x-2">
+                      {part}
+                      <span>•</span>
+                    </span>
+                  ))}
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {formats.slice(0, 4).map((f) => (
-                    <span key={f} className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-semibold">
-                      {f}
-                    </span>
+                  {/* Genres */}
+                  {genres.map((g, idx) => (
+                    <button
+                      key={g}
+                      onClick={() => handleGenreClick(g)}
+                      className="cursor-pointer hover:text-white hover:underline underline-offset-4"
+                    >
+                      {g}{idx < genres.length - 1 ? "," : ""}
+                    </button>
                   ))}
-                  {languages.slice(0, 4).map((l) => (
-                    <span key={l} className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-semibold">
-                      {l}
-                    </span>
-                  ))}
+                  <span>•</span>
+
+                  {/* Certificate */}
+                  {certificate && (
+                    <>
+                      <span>{certificate}</span>
+                      <span>•</span>
+                    </>
+                  )}
+
+                  {/* Release date */}
+                  {releaseDate && (
+                      <>
+                        <span>{releaseDate}</span>
+                      </>
+                  )}
+                </div>
+
+                {/* Single Tag Layout for Formats and Languages */}
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {formats.length > 0 && (
+                    <div className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
+                      {formats.map((f, idx) => (
+                        <button
+                          key={f}
+                          onClick={() => handleFormatClick(f)}
+                          className="hover:underline underline-offset-2"
+                        >
+                          {f}{idx < formats.length - 1 ? ", " : ""}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {languages.length > 0 && (
+                    <div className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
+                      {languages.map((l, idx) => (
+                        <button
+                          key={l}
+                          onClick={() => handleLanguageClick(l)}
+                          className="hover:underline underline-offset-2"
+                        >
+                          {l}{idx < languages.length - 1 ? ", " : ""}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-2">
@@ -224,6 +314,12 @@ export default function MovieDetails() {
                   >
                     Book tickets
                   </button>
+                </div>
+                <div className="mt-6 max-w-2xl">
+                  <h2 className="text-lg font-semibold">About the movie</h2>
+                  <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-white/80">
+                    {movie?.movieDescription || "No description available."}
+                  </p>
                 </div>
               </div>
 
@@ -236,12 +332,7 @@ export default function MovieDetails() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10">
-        <div className="rounded-3xl bg-white p-8 text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100">
-          <h2 className="text-2xl font-semibold">About the movie</h2>
-          <p className="mt-4 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">
-            {movie?.movieDescription || "No description available."}
-          </p>
-        </div>
+
       </section>
     </div>
   );

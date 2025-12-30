@@ -110,11 +110,15 @@ public class MovieService {
         newMovie.setCertificate(movie.getCertificate());
         newMovie.setReleaseDate(movie.getReleaseDate());
         newMovie.setAvgRating(movie.getAvgRating());
+        newMovie.setMoviePoster(movie.getMoviePoster());
+        newMovie.setFormats(movie.getFormats());
+        newMovie.setLanguages(movie.getLanguages());
+        newMovie.setGenres(movie.getGenres());
         return newMovie;
     }
 
     @Transactional
-    private Movie saveMovie(Movie movie) throws CrudOperationException {
+    protected Movie saveMovie(Movie movie) throws CrudOperationException {
         try {
             boolean isNew = (movie.getMovieId() == null);
             Movie movieToSave;
@@ -162,7 +166,7 @@ public class MovieService {
     	}
     }
 
-	@Cacheable(value = CACHE_MOVIE_BY_ID, key = "#id")
+//	@Cacheable(value = CACHE_MOVIE_BY_ID, key = "#id")
 	public Optional<Movie> getMovieById(Long id) throws CrudOperationException {
 		try{
 			log.info("Fetching movie with ID {} from database", id);

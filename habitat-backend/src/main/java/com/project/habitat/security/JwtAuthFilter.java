@@ -31,8 +31,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/login",
             "/movies/**",
             "/genres",
-            "/formats",
-            "/languages"
+            "/format",
+            "/language"
     );
 
     public JwtAuthFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService) {

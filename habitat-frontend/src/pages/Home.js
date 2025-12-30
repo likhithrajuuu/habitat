@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api/axios";
 import {
   clearMovieError,
@@ -41,33 +41,6 @@ const pickPosterSrc = (movie) => {
     movie.moviePoster ||
     movie.movie_poster ||
     movie.posterUrl ||
-    movie.posterURL ||
-    movie.poster_url ||
-    movie.posterPath ||
-    movie.poster_path ||
-    movie.posterImage ||
-    movie.poster_image ||
-    movie.poster ||
-    movie.imageUrl ||
-    movie.imageURL ||
-    movie.image_url ||
-    movie.imagePath ||
-    movie.image_path ||
-    movie.image ||
-    movie.thumbnailUrl ||
-    movie.thumbnailURL ||
-    movie.thumbnail_url ||
-    movie.thumbnailPath ||
-    movie.thumbnail_path ||
-    movie.thumbnail ||
-    movie.coverUrl ||
-    movie.coverURL ||
-    movie.cover_url ||
-    movie.coverPath ||
-    movie.cover_path ||
-    movie.cover ||
-    movie.posterBase64 ||
-    movie.poster_base64 ||
     null
   );
 };
@@ -128,7 +101,12 @@ const pickLanguagesLabel = (movie) => {
     null;
 
   if (!raw) return null;
-  if (Array.isArray(raw)) return raw.filter(Boolean).join(", ");
+  if (Array.isArray(raw)) {
+    return raw
+      .map((l) => (typeof l === "object" ? l.name || l.languageName : l))
+      .filter(Boolean)
+      .join(", ");
+  }
   if (typeof raw === "string") return raw;
   return null;
 };
@@ -153,6 +131,7 @@ const pickAvgRatingLabel = (movie) => {
 export default function Home() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const movieList = useSelector((state) => state.movieList || {});
   const moviesByGenre = useSelector((state) => state.moviesByGenre || {});
   const moviesByLanguage = useSelector((state) => state.moviesByLanguage || {});
@@ -173,6 +152,22 @@ export default function Home() {
 
   const [formatOptions, setFormatOptions] = useState([]);
   const [formatOptionsLoading, setFormatOptionsLoading] = useState(false);
+
+  const [showAll, setShowAll] = useState(false);
+  const LIMIT = 10;
+
+  useEffect(() => {
+    if (location.state?.filterLanguage) {
+      const lang = location.state.filterLanguage;
+      setSelectedLanguage(lang);
+      setSelectedGenre("");
+      setSelectedFormat("");
+      setBrowseMode("language");
+      dispatch(getMoviesByLanguage(lang));
+      // Clear state so it doesn't re-filter on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, dispatch]);
 
   const scrollerRef = useRef(null);
   const carouselWrapRef = useRef(null);
@@ -411,10 +406,15 @@ export default function Home() {
     return movieList;
   }, [browseMode, movieList, moviesByFormat, moviesByGenre, moviesByLanguage]);
 
-  const activeMovies = useMemo(() => {
+      const activeMovies = useMemo(() => {
     if (!Array.isArray(activeSlice.movies)) return [];
     return activeSlice.movies;
   }, [activeSlice.movies]);
+
+  const displayedMovies = useMemo(() => {
+    if (showAll || activeMovies.length <= LIMIT) return activeMovies;
+    return activeMovies.slice(0, LIMIT);
+  }, [activeMovies, showAll]);
 
   const activeLoading = !!activeSlice.loading;
   const activeError = activeSlice.error;
@@ -423,11 +423,13 @@ export default function Home() {
     const el = scrollerRef.current;
     if (!el) return;
 
+    // We want to scroll by 5 cards + their gaps
     const card = el.querySelector("[data-movie-card='true']");
-    const cardWidth = card ? card.getBoundingClientRect().width : 280;
+    const cardWidth = card ? card.getBoundingClientRect().width : 160;
     const gap = 16;
+    const scrollAmount = (cardWidth + gap) * 5;
 
-    el.scrollBy({ left: dir * (cardWidth + gap) * 2, behavior: "smooth" });
+    el.scrollBy({ left: dir * scrollAmount, behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -507,6 +509,18 @@ export default function Home() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Now Showing</h2>
         </div>
+        {activeMovies.length > LIMIT && (
+          <button
+            onClick={() => navigate("/movies/explore")}
+            className="group flex items-center gap-1 text-sm font-semibold text-rose-500 hover:text-rose-600 transition-colors"
+          >
+            See all
+            <ChevronRight 
+              size={16} 
+              className="group-hover:translate-x-0.5 transition-transform duration-300" 
+            />
+          </button>
+        )}
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -637,7 +651,7 @@ export default function Home() {
               Array.from({ length: 6 }).map((_, idx) => <SkeletonCard key={idx} />)
             ) : null}
 
-            {activeMovies.map((movie) => {
+            {displayedMovies.map((movie) => {
               const movieId = movie?.movieId ?? movie?.id ?? null;
               const key = movieId ?? pickTitle(movie);
               const title = pickTitle(movie);

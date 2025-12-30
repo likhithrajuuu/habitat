@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {
   Menu,
   X,
@@ -858,6 +858,8 @@ const Navbar = () => {
     closeLocationMenu();
   };
 
+  const navigate = useNavigate();
+
   const handleSignInClick = () => {
     openAuth("login");
   };
@@ -1013,7 +1015,7 @@ const Navbar = () => {
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex h-12 items-center justify-between gap-6">
             <div className="flex min-w-0 items-center gap-6 text-sm font-medium text-slate-700 dark:text-slate-200">
-              <button type="button" className="hover:text-slate-900 dark:hover:text-white">Movies</button>
+              <button type="button" className="hover:text-slate-900 dark:hover:text-white" onClick={()=>navigate("/movies/explore")}>Movies</button>
               <button type="button" className="hover:text-slate-900 dark:hover:text-white">Stream</button>
               <button type="button" className="hover:text-slate-900 dark:hover:text-white">Events</button>
               <button type="button" className="hover:text-slate-900 dark:hover:text-white">Plays</button>

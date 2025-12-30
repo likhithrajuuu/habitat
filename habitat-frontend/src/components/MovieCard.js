@@ -19,7 +19,7 @@ export default function MovieCard({
       data-movie-card="true"
       onClick={isClickable ? onClick : undefined}
       className={
-        "w-40 shrink-0 rounded-2xl overflow-hidden focus:outline-none text-left " +
+        "w-56 shrink-0 rounded-2xl overflow-hidden focus:outline-none text-left " +
         (isClickable ? "cursor-pointer" : "cursor-default")
       }
       aria-label={isClickable ? `Open ${title}` : title}
@@ -58,7 +58,7 @@ export default function MovieCard({
         </div>
 
         <div className="mt-2 truncate text-sm font-medium text-slate-600 dark:text-slate-300">
-          {languagesLabel || meta || "\u00A0"}
+          {languagesLabel || "\u00A0"}
         </div>
       </div>
     </button>
