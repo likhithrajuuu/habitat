@@ -15,5 +15,5 @@ public interface RatingsRepository extends JpaRepository<Rating, Long> {
     @Query("SELECT COUNT(r) FROM Rating r WHERE r.movie.movieId = :movieId")
     long countByMovieId(@Param("movieId") Long movieId);
 
-    List<Rating> findAllByMovieId(Long movieId);
+    List<Rating> findAllRatingsByMovieMovieId(Long movieId);
 }

@@ -1,5 +1,7 @@
 package com.project.habitat.service;
 
+import com.project.habitat.events.AuthEventProducer;
+import com.project.habitat.events.AuthEventType;
 import com.project.habitat.exception.CrudOperationException;
 import com.project.habitat.exception.CrudValidationException;
 import com.project.habitat.model.User;
@@ -30,6 +32,7 @@ public class UserService {
 
     @Autowired
     private Validator validator;
+
 
     private void checkForNull(User user) {
         if(user == null) {

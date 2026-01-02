@@ -57,12 +57,12 @@ public class RatingsService {
         }
     }
 
-    public Long getRatingsCountByMoiveId(Long movieId){
+    public Long getRatingsCountByMovieId(Long movieId){
         checkId(movieId);
         return ratingsRepository.countByMovieId(movieId);
     }
 
     public List<Rating> getAllRatings(Long movieId){
-        return ratingsRepository.findAllByMovieId(movieId);
+        return ratingsRepository.findAllRatingsByMovieMovieId(movieId);
     }
 }

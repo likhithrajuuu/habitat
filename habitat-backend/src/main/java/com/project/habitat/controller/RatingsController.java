@@ -30,9 +30,9 @@ public class RatingsController {
     @GetMapping("/getall/{movieId}")
     public ResponseEntity<?> getAllRatingsByMovieId(@PathVariable Long movieId) {
         try {
-            long count = ratingsService.getAllRatingsByMovieId(movieId);
-            log.info("Successfully fetched ratings count for movieId {} : {}", movieId, count);
-            return ResponseEntity.status(HttpStatus.OK).body(count);
+            List<Rating> ratings = ratingsService.getAllRatings(movieId);
+            log.info("Successfully fetched ratings count for movieId {} : {}", movieId);
+            return ResponseEntity.status(HttpStatus.OK).body(ratings);
 
         } catch (CrudValidationException e) {
             log.error("Validation error while fetching ratings count for movieId {} : {}", movieId, e.getMessage());
@@ -52,7 +52,7 @@ public class RatingsController {
     @GetMapping("/count/{movieId}")
     public ResponseEntity<?> getRatingsCountByMovieId(@PathVariable Long movieId) {
         try {
-            long count = ratingsService.getRatingsCountByMoiveId(movieId);
+            long count = ratingsService.getRatingsCountByMovieId(movieId);
             log.info("Successfully fetched ratings count for movieId {} : {}", movieId, count);
             return ResponseEntity.status(HttpStatus.OK).body(count);
 
