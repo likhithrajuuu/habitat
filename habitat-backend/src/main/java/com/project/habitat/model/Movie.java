@@ -1,5 +1,6 @@
 package com.project.habitat.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -57,6 +58,7 @@ public class Movie {
     private Set<Language> languages;
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Rating> ratings;
 
     /* ---------- CONSTRUCTORS ---------- */

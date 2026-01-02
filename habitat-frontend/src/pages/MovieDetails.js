@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import { Share2, ThumbsUp } from "lucide-react";
+import {Share2, ThumbsUp, StarsIcon, Star} from "lucide-react";
 import {getMovieById, getMoviesByLanguage, clearMovieError, getMoviesByGenre, getMoviesByFormat} from "../redux/actions/movieActions";
+import api from "../api/axios";
 
 const pickTitle = (movie) => {
   if (!movie || typeof movie !== "object") return "Movie";
@@ -134,6 +135,43 @@ export default function MovieDetails() {
   const formats = extractNames(movie?.formats, "format");
   const languages = extractNames(movie?.languages, "language");
 
+  const [ratingsCount, setRatingsCount] = useState(null);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let cancelled = false;
+
+    api.get(`/ratings/count/${id}`)
+        .then(res => {
+          if (!cancelled) setRatingsCount(res.data);
+        })
+        .catch(() => {
+          if (!cancelled) setRatingsCount(0);
+        });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const formatAvgRating = (count) => {
+    if (count == null) return null;
+    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M+`;
+    if (count >= 1_000) return `${Math.floor(count / 1_000)}K+`;
+    return `${count}`;
+  };
+
+  const votesLabel = useMemo(
+      () => formatAvgRating(ratingsCount),
+      [ratingsCount]
+  );
+
+  const avgRatingLabel = useMemo(
+      () => formatAvgRating(movie?.avgRating),
+      [movie?.avgRating]
+  );
+
   const handleGenreClick = (genre) => {
     dispatch(clearMovieError());
     dispatch(getMoviesByGenre(genre));
@@ -187,7 +225,7 @@ export default function MovieDetails() {
           <div className="flex flex-col gap-8 lg:flex-row">
             {/* Poster card */}
             <div className="w-full max-w-xs shrink-0">
-              <div className="overflow-hidden rounded-3xl bg-black/60 shadow-sm">
+              <div className="overflow-hidden rounded-md bg-black/60 shadow-sm">
                 <div className="relative aspect-[9/16] bg-slate-800">
                   {posterSrc ? (
                     <img
@@ -200,7 +238,7 @@ export default function MovieDetails() {
                     />
                   ) : null}
                   {releaseDate ? (
-                    <div className="absolute inset-x-0 bottom-0 bg-black/80 px-4 py-2 text-center text-xs font-semibold text-white">
+                    <div className="absolute inset-x-0 bottom-0 bg-black px-4 py-2 text-center text-xs font-semibold text-white">
                       Releasing on {releaseDate}
                     </div>
                   ) : null}
@@ -273,6 +311,22 @@ export default function MovieDetails() {
                       <>
                         <span>{releaseDate}</span>
                       </>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-white">
+                  <Star size={28} className="text-red-500" fill="currentColor" />
+
+                  {avgRatingLabel ? (
+                      <span className="text-lg font-bold">
+      {avgRatingLabel}/10
+                        {votesLabel && (
+                            <span className="ml-3 text-lg font-semibold text-white/80">
+          ({votesLabel} votes)
+        </span>
+                        )}
+    </span>
+                  ) : (
+                      <span className="text-lg text-white/70">No ratings yet</span>
                   )}
                 </div>
 

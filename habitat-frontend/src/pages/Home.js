@@ -153,6 +153,8 @@ export default function Home() {
   const [formatOptions, setFormatOptions] = useState([]);
   const [formatOptionsLoading, setFormatOptionsLoading] = useState(false);
 
+  const [ratingsCountMap, setRatingsCountMap] = useState({});
+
   const [showAll, setShowAll] = useState(false);
   const LIMIT = 10;
 
@@ -168,6 +170,7 @@ export default function Home() {
       window.history.replaceState({}, document.title);
     }
   }, [location.state, dispatch]);
+
 
   const scrollerRef = useRef(null);
   const carouselWrapRef = useRef(null);
@@ -459,6 +462,44 @@ export default function Home() {
     return () => window.removeEventListener("resize", update);
   }, [activeLoading, activeMovies.length]);
 
+  useEffect(() => {
+    if (!Array.isArray(activeMovies) || activeMovies.length === 0) return;
+
+    let cancelled = false;
+
+    const fetchCounts = async () => {
+      try {
+        const requests = activeMovies
+            .map(m => m.movieId ?? m.id)
+            .filter(Boolean)
+            .map(id =>
+                api.get(`/ratings/count/${id}`)
+                    .then(res => ({ id, count: res.data }))
+                    .catch(() => ({ id, count: 0 }))
+            );
+
+        const results = await Promise.all(requests);
+
+        if (cancelled) return;
+
+        const map = {};
+        results.forEach(({ id, count }) => {
+          map[id] = count;
+        });
+
+        setRatingsCountMap(map);
+      } catch (err) {
+        console.error("Failed to load ratings count", err);
+      }
+    };
+
+    fetchCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMovies]);
+
   const SkeletonCard = () => (
     <div className="w-40 shrink-0 overflow-hidden rounded-3xl">
       <div className="relative aspect-[9/16] bg-slate-100 dark:bg-slate-800" data-movie-poster="true">
@@ -671,6 +712,7 @@ export default function Home() {
                   languagesLabel={languagesLabel}
                   meta={meta}
                   avgRatingLabel={avgRatingLabel}
+                  countOfRatings={ratingsCountMap[movieId] ?? null}
                   onClick={() => {
                     if (!movieId) return;
                     navigate(`/movies/${movieId}`);

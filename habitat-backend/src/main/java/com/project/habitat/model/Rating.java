@@ -1,36 +1,38 @@
 package com.project.habitat.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(schema = "dev", name="rating")
+@Table(schema = "dev", name = "ratings")
 public class Rating {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long ratingId;
 
-    private Integer rating;
-    private String review;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "rating_id")
+	private Long ratingId;
 
-    @ManyToOne
-    @JoinColumn(name = "movie_id")
-    private Movie movie;
+	@Column(name = "rating")
+	private Integer rating;
 
-    private LocalDateTime createdAt;
-    
-    public Rating() {
-    	
-    }
+	@Column(name = "review")
+	private String review;
 
-	public Rating(Long ratingId, Integer rating, String review, Movie movie, LocalDateTime createdAt) {
-		super();
-		this.ratingId = ratingId;
-		this.rating = rating;
-		this.review = review;
-		this.movie = movie;
-		this.createdAt = createdAt;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "movie_id", nullable = false)
+	@JsonBackReference
+	private Movie movie;
+
+	@Column(name = "created_at")
+	private LocalDateTime createdAt;
+
+	public Rating() {}
+
+	@PrePersist
+	protected void onCreate() {
+		this.createdAt = LocalDateTime.now();
 	}
 
 	public Long getRatingId() {
@@ -75,9 +77,12 @@ public class Rating {
 
 	@Override
 	public String toString() {
-		return "Rating [ratingId=" + ratingId + ", rating=" + rating + ", review=" + review + ", movie=" + movie
-				+ ", createdAt=" + createdAt + "]";
+		return "Rating{" +
+				"ratingId=" + ratingId +
+				", rating=" + rating +
+				", review='" + review + '\'' +
+				", movie=" + movie +
+				", createdAt=" + createdAt +
+				'}';
 	}
-    
-    
 }
