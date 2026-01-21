@@ -22,7 +22,7 @@ public class AuthEventProducer {
 
     public void publish(AuthEventType type, com.project.habitat.model.User user) {
 
-        log.error("🔥🔥🔥 AUTH EVENT PRODUCER CALLED FOR USER ID: {}", user.getId());
+        log.info("AUTH EVENT PRODUCER CALLED FOR USER ID: {}", user.getId());
         AuthEvent event = new AuthEvent(
                 UUID.randomUUID().toString(),
                 type,
