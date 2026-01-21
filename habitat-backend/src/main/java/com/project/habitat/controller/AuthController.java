@@ -25,7 +25,6 @@ public class AuthController {
     private final Validator validator;
     private final AuthEventProducer authEventProducer;
 
-    // ✅ SINGLE constructor (important)
     public AuthController(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
@@ -64,7 +63,6 @@ public class AuthController {
 
             log.info("User registered successfully: {}", savedUser.getUsername());
 
-            // 🔥 KAFKA EVENT PUBLISHED HERE
             authEventProducer.publish(
                     AuthEventType.USER_REGISTERED,
                     savedUser
@@ -105,6 +103,10 @@ public class AuthController {
             String token = jwtUtil.generateToken(dbUser.getUsername());
 
             log.info("Login successful for user: {}", dbUser.getUsername());
+            authEventProducer.publish(
+                    AuthEventType.USER_LOGGED_IN,
+                    dbUser
+            );
             return ResponseEntity.ok(token);
 
         } catch (Exception e) {
